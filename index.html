@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Enhanced Meteor Shower</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background: linear-gradient(to bottom, #0b0f2e, #1a1f4b, #2d3560);
+            color: white;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            position: relative;
+            touch-action: manipulation;
+        }
+        
+        /* Control Panel */
+        .control-panel {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            left: 10px;
+            background: rgba(10, 15, 40, 0.85);
+            border-radius: 12px;
+            padding: 12px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(100, 120, 255, 0.2);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .control-title {
+            font-size: 1rem;
+            margin-bottom: 8px;
+            color: #a2b2ff;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        
+        button {
+            background: linear-gradient(to right, #4a6fff, #8a4fff);
+            border: none;
+            color: white;
+            padding: 10px 8px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            min-height: 36px;
+        }
+        
+        button:active {
+            transform: scale(0.95);
+        }
+        
+        .dropdown {
+            position: relative;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background: rgba(15, 20, 50, 0.95);
+            width: 100%;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            z-index: 1;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+            top: 100%;
+            left: 0;
+        }
+        
+        .dropdown.active .dropdown-content {
+            display: block;
+        }
+        
+        .dropdown-content button {
+            background: rgba(30, 35, 70, 0.9);
+            width: 100%;
+            text-align: left;
+            border-radius: 0;
+            border-bottom: 1px solid rgba(100, 120, 255, 0.2);
+            padding: 10px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .dropdown-content button:last-child {
+            border-bottom: none;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #a0a8d0;
+            flex-wrap: wrap;
+        }
+        
+        .stat-item {
+            margin: 2px 5px;
+        }
+        
+        /* Wish Message */
+        .wish-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 25px;
+            z-index: 100;
+            font-size: 1.1rem;
+            box-shadow: 0 0 25px rgba(160, 180, 255, 0.4);
+            animation: fadeInOut 3s ease-in-out;
+            display: none;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            max-width: 80%;
+        }
+        
+        /* Wish Star */
+        .wish-star {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: radial-gradient(circle, #fff, #ff9ec9);
+            border-radius: 50%;
+            box-shadow: 0 0 8px #ff9ec9, 0 0 15px #ff9ec9;
+            z-index: 50;
+            animation: wishFly 4s ease-out forwards;
+        }
+        
+        /* Background Stars */
+        .star {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+            animation: twinkle 8s infinite ease-in-out;
+        }
+        
+        /* Meteor Style */
+        .meteor {
+            position: absolute;
+            z-index: 20;
+        }
+        
+        .meteor-tail {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, 
+                rgba(255,255,255,0) 0%, 
+                rgba(255,255,255,1) 30%, 
+                rgba(255,255,255,0.8) 70%, 
+                rgba(255,255,255,0) 100%);
+            border-radius: 50%;
+            filter: blur(0.5px);
+            transform-origin: left center;
+        }
+        
+        .meteor-head {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 0 10px 2px white;
+            filter: blur(0.5px);
+        }
+        
+        /* Special Meteor Styles */
+        .large-meteor .meteor-tail {
+            height: 4px;
+            filter: blur(1.2px);
+        }
+        
+        .large-meteor .meteor-head {
+            width: 8px;
+            height: 8px;
+            box-shadow: 0 0 20px 4px white;
+        }
+        
+        .small-meteor .meteor-tail {
+            height: 1px;
+            filter: blur(0.3px);
+        }
+        
+        .small-meteor .meteor-head {
+            width: 2px;
+            height: 2px;
+            box-shadow: 0 0 5px 1px white;
+        }
+        
+        .comet .meteor-tail {
+            height: 3px;
+            width: 120px;
+            background: linear-gradient(90deg, 
+                rgba(255,255,255,0) 0%, 
+                rgba(200,230,255,1) 20%,
+                rgba(255,255,255,1) 40%, 
+                rgba(255,255,255,0.8) 70%, 
+                rgba(255,255,255,0) 100%);
+            filter: blur(1.2px);
+        }
+        
+        .comet .meteor-head {
+            width: 10px;
+            height: 10px;
+            background: radial-gradient(circle, #fff, #a2d5ff);
+            box-shadow: 0 0 25px 6px #a2d5ff;
+        }
+        
+        .asteroid .meteor-tail {
+            height: 5px;
+            width: 180px;
+            background: linear-gradient(90deg, 
+                rgba(255,150,100,0) 0%, 
+                rgba(255,180,100,1) 20%,
+                rgba(255,200,150,1) 40%, 
+                rgba(255,255,200,0.8) 70%, 
+                rgba(255,255,255,0) 100%);
+            filter: blur(1.8px);
+        }
+        
+        .asteroid .meteor-head {
+            width: 14px;
+            height: 14px;
+            background: radial-gradient(circle, #ffb464, #ff8c42);
+            box-shadow: 0 0 30px 8px #ff8c42;
+            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+        }
+        
+        /* Animations */
+        @keyframes meteorFly {
+            0% {
+                transform: translateX(0) translateY(0) rotate(var(--angle));
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(var(--tx)) translateY(var(--ty)) rotate(var(--angle));
+                opacity: 0;
+            }
+        }
+        
+        @keyframes meteorBurst {
+            0% {
+                transform: translate(0, 0) rotate(var(--angle)) scale(0.8);
+                opacity: 0;
+            }
+            15% {
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty)) rotate(var(--angle)) scale(1);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes meteorArrow {
+            0% {
+                transform: translateX(0) translateY(0) rotate(var(--angle));
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(var(--tx)) translateY(var(--ty)) rotate(var(--angle));
+                opacity: 0;
+            }
+        }
+        
+        @keyframes twinkle {
+            0%, 100% {
+                opacity: 0.3;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.1);
+            }
+        }
+        
+        @keyframes fadeInOut {
+            0%, 100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+            20%, 80% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        
+        @keyframes wishFly {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty)) scale(0);
+                opacity: 0;
+            }
+        }
+        
+        /* Desktop specific styles */
+        @media (min-width: 768px) {
+            .control-panel {
+                top: 20px;
+                right: 20px;
+                left: auto;
+                max-width: 200px;
+                padding: 15px;
+            }
+            
+            .controls {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            button {
+                padding: 8px 12px;
+                font-size: 0.9rem;
+            }
+            
+            .dropdown-content {
+                min-width: 160px;
+            }
+            
+            .dropdown-content button {
+                padding: 8px 12px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Control Panel -->
+    <div class="control-panel">
+        <div class="control-title">Meteor Controls</div>
+        <div class="controls">
+            <div class="dropdown" id="meteorTypeDropdown">
+                <button>Add Meteors ▼</button>
+                <div class="dropdown-content">
+                    <button id="smallMeteors">Small Meteors</button>
+                    <button id="normalMeteors">Normal Meteors</button>
+                    <button id="largeMeteors">Large Meteors</button>
+                    <button id="comets">Comets</button>
+                    <button id="asteroids">Asteroids</button>
+                </div>
+            </div>
+            
+            <div class="dropdown" id="specialDropdown">
+                <button>Special Effects ▼</button>
+                <div class="dropdown-content">
+                    <button id="burstEffect">Burst from Center</button>
+                    <button id="arrowEffect">Arrow Volley</button>
+                </div>
+            </div>
+            
+            <button id="changeSpeed">Change Speed</button>
+            <button id="makeWish">Make a Wish</button>
+        </div>
+        <div class="stats">
+            <div class="stat-item">Meteors: <span id="starCount">0</span></div>
+            <div class="stat-item">Wishes: <span id="wishCount">0</span></div>
+            <div class="stat-item">Speed: <span id="speed">Normal</span></div>
+        </div>
+    </div>
+    
+    <!-- Wish Message -->
+    <div class="wish-message" id="wishMessage">✨ Your wish is on its way ✨</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const body = document.body;
+            const wishMessage = document.getElementById('wishMessage');
+            let starCount = 0;
+            let wishCount = 0;
+            let speed = 'Normal';
+            let meteorInterval;
+            let isArrowEffectActive = false;
+            
+            // Update statistics
+            function updateStats() {
+                document.getElementById('starCount').textContent = starCount;
+                document.getElementById('wishCount').textContent = wishCount;
+                document.getElementById('speed').textContent = speed;
+            }
+            
+            // Create star background
+            function createStars() {
+                // Create static stars
+                for (let i = 0; i < 150; i++) {
+                    const star = document.createElement('div');
+                    star.classList.add('star');
+                    
+                    const size = Math.random() * 2.5;
+                    star.style.width = `${size}px`;
+                    star.style.height = `${size}px`;
+                    
+                    star.style.left = `${Math.random() * 100}vw`;
+                    star.style.top = `${Math.random() * 100}vh`;
+                    
+                    star.style.animationDelay = `${Math.random() * 8}s`;
+                    star.style.animationDuration = `${5 + Math.random() * 10}s`;
+                    
+                    body.appendChild(star);
+                }
+            }
+            
+            // Create meteor with specific type and pattern
+            function createMeteor(type = 'normal', pattern = 'random', customAngle = null, customStart = null) {
+                const meteor = document.createElement('div');
+                meteor.classList.add('meteor');
+                
+                if (type === 'small') meteor.classList.add('small-meteor');
+                else if (type === 'large') meteor.classList.add('large-meteor');
+                else if (type === 'comet') meteor.classList.add('comet');
+                else if (type === 'asteroid') meteor.classList.add('asteroid');
+                
+                let startX, startY, angle, distance, tx, ty, duration;
+                
+                // Set parameters based on pattern
+                if (pattern === 'random') {
+                    // Random starting position (from screen edge)
+                    startX = Math.random() * 100;
+                    startY = Math.random() * 30;
+                    
+                    // Random angle and distance
+                    angle = 20 + Math.random() * 40; // 20-60 degree angle
+                    distance = 800 + Math.random() * 400;
+                    
+                    // Calculate end position
+                    tx = Math.cos(angle * Math.PI / 180) * distance;
+                    ty = Math.sin(angle * Math.PI / 180) * distance;
+                    
+                    // Set CSS custom properties
+                    meteor.style.setProperty('--angle', `${angle}deg`);
+                    meteor.style.setProperty('--tx', `${tx}px`);
+                    meteor.style.setProperty('--ty', `${ty}px`);
+                    
+                    // Random speed
+                    duration = getDuration(type);
+                    meteor.style.animation = `meteorFly ${duration}s linear forwards`;
+                }
+                else if (pattern === 'burst') {
+                    // Start from center with slight random offset for more natural look
+                    startX = 50 + (Math.random() * 20 - 10);
+                    startY = 50 + (Math.random() * 20 - 10);
+                    
+                    // Random angle and distance - use similar parameters to normal meteors
+                    angle = Math.random() * 360;
+                    distance = 600 + Math.random() * 500;
+                    
+                    // Calculate end position
+                    tx = Math.cos(angle * Math.PI / 180) * distance;
+                    ty = Math.sin(angle * Math.PI / 180) * distance;
+                    
+                    // Set CSS custom properties
+                    meteor.style.setProperty('--angle', `${angle}deg`);
+                    meteor.style.setProperty('--tx', `${tx}px`);
+                    meteor.style.setProperty('--ty', `${ty}px`);
+                    
+                    duration = getDuration(type) * 0.8; // Slightly faster for burst effect
+                    meteor.style.animation = `meteorBurst ${duration}s ease-out forwards`;
+                }
+                else if (pattern === 'arrow') {
+                    // Use custom angle and start position if provided
+                    if (customAngle !== null && customStart !== null) {
+                        angle = customAngle;
+                        startX = customStart.x;
+                        startY = customStart.y;
+                    } else {
+                        // For arrow effect, ensure good visibility by using optimal angles
+                        const optimalAngles = [25, 30, 45, 60, 135, 150, 225, 315];
+                        angle = optimalAngles[Math.floor(Math.random() * optimalAngles.length)];
+                        
+                        // Calculate start position to ensure good screen coverage
+                        if (angle >= 20 && angle <= 70) {
+                            // From top - avoid control panel area
+                            startX = 30 + Math.random() * 40;
+                            startY = -15;
+                        } else if (angle >= 110 && angle <= 160) {
+                            // From right
+                            startX = 115;
+                            startY = 30 + Math.random() * 40;
+                        } else if (angle >= 190 && angle <= 240) {
+                            // From bottom
+                            startX = 30 + Math.random() * 40;
+                            startY = 115;
+                        } else {
+                            // From left
+                            startX = -15;
+                            startY = 30 + Math.random() * 40;
+                        }
+                    }
+                    
+                    // Longer distance to ensure good screen traversal
+                    distance = 1500 + Math.random() * 800;
+                    
+                    // Calculate end position
+                    tx = Math.cos(angle * Math.PI / 180) * distance;
+                    ty = Math.sin(angle * Math.PI / 180) * distance;
+                    
+                    // Set CSS custom properties
+                    meteor.style.setProperty('--angle', `${angle}deg`);
+                    meteor.style.setProperty('--tx', `${tx}px`);
+                    meteor.style.setProperty('--ty', `${ty}px`);
+                    
+                    duration = getDuration(type) * 0.9; // Slightly faster for arrow effect
+                    meteor.style.animation = `meteorArrow ${duration}s linear forwards`;
+                }
+                
+                meteor.style.left = `${startX}vw`;
+                meteor.style.top = `${startY}vh`;
+                
+                // Create meteor tail
+                const tailLength = getTailLength(type);
+                const tail = document.createElement('div');
+                tail.classList.add('meteor-tail');
+                tail.style.width = `${tailLength}px`;
+                tail.style.left = '0';
+                tail.style.top = '0';
+                
+                // Create meteor head
+                const headSize = getHeadSize(type);
+                const head = document.createElement('div');
+                head.classList.add('meteor-head');
+                head.style.left = `${tailLength}px`;
+                head.style.top = `-${headSize/4}px`;
+                
+                meteor.appendChild(tail);
+                meteor.appendChild(head);
+                body.appendChild(meteor);
+                
+                // Meteor count
+                starCount++;
+                updateStats();
+                
+                // Remove element after meteor disappears
+                setTimeout(() => {
+                    if (meteor.parentNode) {
+                        meteor.remove();
+                        starCount--;
+                        updateStats();
+                    }
+                }, duration * 1000);
+            }
+            
+            // Helper functions for meteor properties
+            function getDuration(type) {
+                let baseDuration = 1.5 + Math.random() * 2;
+                if (speed === 'Fast') baseDuration /= 1.8;
+                if (speed === 'Slow') baseDuration *= 1.8;
+                
+                if (type === 'small') return baseDuration * 0.8;
+                if (type === 'large') return baseDuration * 1.2;
+                if (type === 'comet') return baseDuration * 1.5;
+                if (type === 'asteroid') return baseDuration * 1.8;
+                return baseDuration;
+            }
+            
+            function getTailLength(type) {
+                if (type === 'small') return 20 + Math.random() * 30;
+                if (type === 'large') return 80 + Math.random() * 60;
+                if (type === 'comet') return 120;
+                if (type === 'asteroid') return 180;
+                return 40 + Math.random() * 60;
+            }
+            
+            function getHeadSize(type) {
+                if (type === 'small') return 2;
+                if (type === 'large') return 8;
+                if (type === 'comet') return 10;
+                if (type === 'asteroid') return 14;
+                return 4;
+            }
+            
+            // Create wish star
+            function createWishStar() {
+                const wishStar = document.createElement('div');
+                wishStar.classList.add('wish-star');
+                
+                // Start from center of screen
+                wishStar.style.left = '50%';
+                wishStar.style.top = '50%';
+                
+                // Fly randomly toward screen edge
+                const angle = Math.random() * Math.PI * 2;
+                const distance = Math.max(window.innerWidth, window.innerHeight);
+                const tx = Math.cos(angle) * distance;
+                const ty = Math.sin(angle) * distance;
+                
+                wishStar.style.setProperty('--tx', `${tx}px`);
+                wishStar.style.setProperty('--ty', `${ty}px`);
+                
+                // Random size
+                const size = 4 + Math.random() * 8;
+                wishStar.style.width = `${size}px`;
+                wishStar.style.height = `${size}px`;
+                
+                body.appendChild(wishStar);
+                
+                // Remove element after star disappears
+                setTimeout(() => {
+                    if (wishStar.parentNode) {
+                        wishStar.remove();
+                    }
+                }, 4000);
+            }
+            
+            // Show wish message
+            function showWishMessage() {
+                wishMessage.style.display = 'block';
+                setTimeout(() => {
+                    wishMessage.style.display = 'none';
+                }, 3000);
+            }
+            
+            // Start meteor shower
+            function startMeteorShower() {
+                // Clear existing interval
+                if (meteorInterval) {
+                    clearInterval(meteorInterval);
+                }
+                
+                // Set interval based on speed
+                let interval = 1000;
+                if (speed === 'Fast') interval = 500;
+                if (speed === 'Slow') interval = 2000;
+                
+                meteorInterval = setInterval(() => {
+                    createMeteor('normal', 'random');
+                }, interval);
+            }
+            
+            // Add multiple meteors of specific type
+            function addMultipleMeteors(type, count = 5) {
+                for (let i = 0; i < count; i++) {
+                    setTimeout(() => {
+                        createMeteor(type, 'random');
+                    }, i * 100);
+                }
+            }
+            
+            // Special effects
+            function burstEffect() {
+                // Use larger meteors for burst effect
+                for (let i = 0; i < 40; i++) {
+                    setTimeout(() => {
+                        createMeteor('large', 'burst');
+                    }, i * 40);
+                }
+            }
+            
+            function arrowEffect() {
+                if (isArrowEffectActive) return;
+                isArrowEffectActive = true;
+                
+                // Choose from pre-defined optimal directions that traverse the screen well
+                const optimalDirections = [
+                    { angle: 30, startX: 30, startY: -10 },   // Top-left to bottom-right
+                    { angle: 45, startX: 50, startY: -10 },   // Top to bottom-right
+                    { angle: 60, startX: 70, startY: -10 },   // Top-right to bottom-left
+                    { angle: 135, startX: 110, startY: 30 },  // Right to bottom-left
+                    { angle: 150, startX: 110, startY: 50 },  // Right to left
+                    { angle: 210, startX: 70, startY: 110 },  // Bottom to top-left
+                    { angle: 225, startX: 50, startY: 110 },  // Bottom to top
+                    { angle: 315, startX: -10, startY: 50 },  // Left to right
+                    { angle: 330, startX: -10, startY: 30 }   // Left to bottom-right
+                ];
+                
+                const direction = optimalDirections[Math.floor(Math.random() * optimalDirections.length)];
+                
+                // Generate meteors for better visibility
+                for (let i = 0; i < 35; i++) {
+                    setTimeout(() => {
+                        // Add slight variation to angle but keep the general direction
+                        const angleVariation = (Math.random() * 10 - 5);
+                        const angle = direction.angle + angleVariation;
+                        
+                        // Add slight position variation
+                        const posVariation = Math.random() * 15 - 7.5;
+                        let startX = direction.startX + posVariation;
+                        let startY = direction.startY + posVariation;
+                        
+                        createMeteor('large', 'arrow', angle, {x: startX, y: startY});
+                    }, i * 30);
+                }
+                
+                setTimeout(() => {
+                    isArrowEffectActive = false;
+                }, 1500);
+            }
+            
+            // Initialize stars and meteors
+            createStars();
+            startMeteorShower();
+            
+            // Dropdown toggle functionality
+            const dropdowns = document.querySelectorAll('.dropdown');
+            dropdowns.forEach(dropdown => {
+                const button = dropdown.querySelector('button');
+                
+                button.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    
+                    // Close other dropdowns
+                    dropdowns.forEach(other => {
+                        if (other !== dropdown) {
+                            other.classList.remove('active');
+                        }
+                    });
+                    
+                    // Toggle current dropdown
+                    dropdown.classList.toggle('active');
+                });
+            });
+            
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function() {
+                dropdowns.forEach(dropdown => {
+                    dropdown.classList.remove('active');
+                });
+            });
+            
+            // Button events
+            document.getElementById('smallMeteors').addEventListener('click', function(e) {
+                e.stopPropagation();
+                addMultipleMeteors('small', 8);
+            });
+            
+            document.getElementById('normalMeteors').addEventListener('click', function(e) {
+                e.stopPropagation();
+                addMultipleMeteors('normal', 8);
+            });
+            
+            document.getElementById('largeMeteors').addEventListener('click', function(e) {
+                e.stopPropagation();
+                addMultipleMeteors('large', 5);
+            });
+            
+            document.getElementById('comets').addEventListener('click', function(e) {
+                e.stopPropagation();
+                addMultipleMeteors('comet', 3);
+            });
+            
+            document.getElementById('asteroids').addEventListener('click', function(e) {
+                e.stopPropagation();
+                addMultipleMeteors('asteroid', 2);
+            });
+            
+            // Special effects
+            document.getElementById('burstEffect').addEventListener('click', function(e) {
+                e.stopPropagation();
+                burstEffect();
+            });
+            
+            document.getElementById('arrowEffect').addEventListener('click', function(e) {
+                e.stopPropagation();
+                arrowEffect();
+            });
+            
+            document.getElementById('changeSpeed').addEventListener('click', function() {
+                if (speed === 'Normal') speed = 'Fast';
+                else if (speed === 'Fast') speed = 'Slow';
+                else speed = 'Normal';
+                
+                updateStats();
+                startMeteorShower();
+            });
+            
+            document.getElementById('makeWish').addEventListener('click', function() {
+                wishCount++;
+                updateStats();
+                
+                // Show wish message
+                showWishMessage();
+                
+                // Create multiple wish stars
+                for (let i = 0; i < 7; i++) {
+                    setTimeout(createWishStar, i * 200);
+                }
+            });
+            
+            // Initial statistics
+            updateStats();
+        });
+    </script>
+</body>
+</html>
